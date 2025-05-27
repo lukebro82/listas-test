@@ -1,4 +1,3 @@
-import { get } from "http";
 import { NextApiRequest, NextApiResponse } from "next";
 
 function getLista() {

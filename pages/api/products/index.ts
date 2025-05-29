@@ -1,15 +1,30 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { productsIndex, client } from "lib/algolia";
+import { client } from "lib/algolia";
+import { getOffsetAndLimitFromReq } from "lib/request";
+import methods from "micro-method-router";
 
-export default async function (req: NextApiRequest, res: NextApiResponse) {
-  const { results } = await client.search({
-    requests: [
-      {
-        indexName: productsIndex,
-        query: req.query.search as string,
+export default methods({
+  async get(req: NextApiRequest, res: NextApiResponse) {
+    const { limit, offset } = getOffsetAndLimitFromReq(req);
+    const query = req.query.search as string;
+
+    const response = await client.searchSingleIndex({
+      indexName: "products",
+      searchParams: {
+        query,
+        hitsPerPage: limit,
+        page: offset > 1 ? Math.floor(offset / limit) : 0,
       },
-    ],
-  });
+    });
 
-  res.send({ message: results });
-}
+    res.send({
+      results: response.hits,
+      pagination: {
+        offset,
+        limit,
+        page: response.page,
+        total: response.nbHits,
+      },
+    });
+  },
+});
